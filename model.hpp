@@ -7,20 +7,9 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glad/glad.h> 
-#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 #include "shader.hpp"
-
-enum class Action
-{   
-    STAND,
-    FORWARD,
-    BACKWARD,
-    LEFT,
-    RIGHT
-};
 
 enum class Orientation
 {
@@ -142,7 +131,8 @@ public:
         const glm::mat4& viewMatrix,
         const glm::mat4& modelMatrix,
         unsigned int x,
-        unsigned int y
+        unsigned int y,
+        glm::vec3 color
     );
     // constructor, expects a filepath to a 3D model.
     Forklift(
@@ -151,7 +141,8 @@ public:
         const glm::mat4& viewMatrix,
         const glm::mat4& modelMatrix,
         unsigned int x,
-        unsigned int y
+        unsigned int y,
+        glm::vec3 color
     );
     // copy constructor
     Forklift(const Forklift& forklift);
@@ -165,6 +156,7 @@ public:
     unsigned int y() const;
     void setY(unsigned int y);
     Orientation orientation() const;
+    const glm::vec3& color() const;
     void setOrientation(Orientation orient);
     const std::unique_ptr<Box>& box() const;
     void setBox(std::unique_ptr<Box>& box); 
@@ -172,6 +164,7 @@ public:
 private:
     unsigned int _x;
     unsigned int _y;
+    glm::vec3 _color;
     Orientation _orient{Orientation::DOWN};
     std::unique_ptr<Box> _box{nullptr};
 };
@@ -219,36 +212,5 @@ public:
     );
     void draw(const Shader& shader) const;
 };
-
-// class Cell 
-// {
-// public:
-//     Cell(
-//         unsigned int x,
-//         unsigned int y,
-//         char color,
-//         unsigned int target
-//     );
-//     unsigned int x() const;
-//     unsigned int y() const;
-//     char color() const;
-//     unsigned int target() const;
-//     Cell* front() const;
-//     Cell* back() const;
-//     Cell* left() const;
-//     Cell* right() const;
-//     Forklift* forklift() const;
-//     void setForklift(Forklift* forklift); 
-// private:
-//     const unsigned int _x;
-//     const unsigned int _y;
-//     const char _color;
-//     const unsigned int _target;
-//     Cell* _front{nullptr};
-//     Cell* _back{nullptr};
-//     Cell* _left{nullptr};
-//     Cell* _right{nullptr};
-//     Forklift* _forklift{nullptr};
-// };
 
 #endif

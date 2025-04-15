@@ -1,11 +1,7 @@
 #include <iostream>
-#include <string>
-#include <unistd.h> 
+#include <thread>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -14,6 +10,7 @@
 #include "game.hpp"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void escapeListener(GLFWwindow* window);
 
 int main(int argc, char** argv)
 {
@@ -23,8 +20,12 @@ int main(int argc, char** argv)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
     // glfw window creation
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "RBGAME", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -46,23 +47,15 @@ int main(int argc, char** argv)
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
 
-    glm::mat4 projection{glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f)};
-    glm::mat4 view{glm::lookAt(glm::vec3{0.0f, -3.0f, 4.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f,-1.0f, 0.0f})};
-    glm::mat4 model{glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)), glm::vec3(0.45f, 0.45f, 0.45f))};
-
-    Board board{
-        "board/board.obj",
-        projection,
-        view,
-        model
-    };
-    
-    Game* game = new Game{board, argv[1]};
+    Game* game{new Game{argv[1]}}; 
+    std::thread escThread(escapeListener, window);
     game->run(argv[1], window);
-
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    glfwTerminate();
     delete game;
+    // Wait for thread to finish
+    escThread.join();
+    // glfw: terminate, clearing all previously allocated GLFW resources.
+    glfwDestroyWindow(window);
+    glfwTerminate();
     return 0;
 };
 
@@ -73,3 +66,13 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 };
+
+void escapeListener(GLFWwindow* window) {
+    while (!glfwWindowShouldClose(window)) {
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);  // 🚨 Close window
+            return;
+        }
+        glfwPollEvents();
+    }
+}

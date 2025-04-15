@@ -4,76 +4,36 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include <unistd.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include "game.hpp"
-
-// std::vector<Cell> generateCells()
-// {
-//     std::vector<Cell> cells;
-//     for (unsigned int y=0; y<9; ++y)
-//     {
-//         for (unsigned int x=0; x<9; ++x)
-//         {
-//             if (y == 8)
-//                 cells.emplace_back(x, y, 'r', 0);
-//             else if (y == 7 && (x == 2 || x == 4 ||x == 6)) 
-//                 cells.emplace_back(x, y, 'g', 0);
-//             else if (x == 0 && y == 6)
-//                 cells.emplace_back(x, y, 'y', 1);
-//             else if (x == 0 && y == 4)
-//                 cells.emplace_back(x, y, 'y', 2);
-//             else if (x == 0 && y == 2)
-//                 cells.emplace_back(x, y, 'y', 3);
-//             else if (x == 8 && y == 6)
-//                 cells.emplace_back(x, y, 'y', 9);
-//             else if (x == 8 && y == 4)
-//                 cells.emplace_back(x, y, 'y', 8);
-//             else if (x == 8 && y == 2)
-//                 cells.emplace_back(x, y, 'y', 6);
-//             else if (x == 2 && y == 0)
-//                 cells.emplace_back(x, y, 'y', 4);
-//             else if (x == 4 && y == 0)
-//                 cells.emplace_back(x, y, 'y', 7);
-//             else if (x == 6 && y == 0)
-//                 cells.emplace_back(x, y, 'y', 5);
-//             else if (x == 0 && y == 0)
-//                 cells.emplace_back(x, y, 'b', 0);
-//             else if (x == 8 && y == 0)
-//                 cells.emplace_back(x, y, 'b', 0);
-//             else
-//                 cells.emplace_back(x, y, 'w', 0);
-//         }
-//     }
-//     return cells;
-// }
 
 std::vector<std::pair<unsigned int, Orientation>> prossessLogFile(const std::string& logFile)
 {
     std::vector<std::pair<unsigned int, Orientation>> robot_moves;
     std::ifstream file(logFile);
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         std::cerr << "Failed to open file.\n";
         exit(1);
     }
-    std::regex pattern(R"(([RBG]) robot (\d) go ([DULR]))");
+    std::regex pattern(R"(([RBG]) robot (\d) go (down|right|left|up))");
     std::string line;
     std::smatch match;
     std::getline(file, line);
     std::regex_search(line, match, std::regex{R"(game starts with (\d) number robots per player)"});
-    int numRobotsPerPlayer = std::stoi(match[1]);
-    while (std::getline(file, line)) {
-        if (std::regex_search(line, match, pattern)) {
+    int numRobotsPerPlayer{std::stoi(match[1])};
+    while (std::getline(file, line))
+    {
+        if (std::regex_search(line, match, pattern))
+        {
             unsigned int index = numRobotsPerPlayer*COLOR2INT.at(match[1]) + std::stoi(match[2]) - 1;
-            if (match[3] == "L") robot_moves.emplace_back(index, Orientation::LEFT);
-            if (match[3] == "R") robot_moves.emplace_back(index, Orientation::RIGHT);
-            if (match[3] == "U") robot_moves.emplace_back(index, Orientation::UP);
-            if (match[3] == "D") robot_moves.emplace_back(index, Orientation::DOWN);
+            if (match[3] == "left") robot_moves.emplace_back(index, Orientation::LEFT);
+            if (match[3] == "right") robot_moves.emplace_back(index, Orientation::RIGHT);
+            if (match[3] == "up") robot_moves.emplace_back(index, Orientation::UP);
+            if (match[3] == "down") robot_moves.emplace_back(index, Orientation::DOWN);
         }
     }
     file.close();
@@ -81,54 +41,39 @@ std::vector<std::pair<unsigned int, Orientation>> prossessLogFile(const std::str
 }
 
 
-Game::Game(const Board& board, const std::string& logFile)
-: _board{board}
-, _notexture{setupShader("shader-code/forklift.vs", "shader-code/forklift.fs")}
-, _withtexture{setupShader("shader-code/board.vs", "shader-code/board.fs")}
+Game::Game(const std::string& logFile)
+: _board{"assets/board/board.obj", PROJECTION, VIEW, MODEL}
+, _notexture{setupShader("shaders/notexture.vs", "shaders/notexture.fs")}
+, _withtexture{setupShader("shaders/withtexture.vs", "shaders/withtexture.fs")}
 {
     this->_setupForklifts(logFile);
-    this->_boxLeft = std::make_unique<Box>(
-        "box/box.obj", 
-        this->_board.projectionMatrix(),
-        this->_board.viewMatrix(),
-        glm::translate(this->_board.modelMatrix(), glm::vec3{2.0f, 0.0f, 3.0f})
-    );
-    this->_boxCenter = std::make_unique<Box>(
-        "box/box.obj", 
-        this->_board.projectionMatrix(),
-        this->_board.viewMatrix(),
-        glm::translate(this->_board.modelMatrix(), glm::vec3{0.0f, 0.0f, 3.0f})
-    );
-    this->_boxRight = std::make_unique<Box>(
-        "box/box.obj",
-        this->_board.projectionMatrix(),
-        this->_board.viewMatrix(),
-        glm::translate(this->_board.modelMatrix(), glm::vec3{-2.0f, 0.0f, 3.0f})
-    );
+    this->_boxLeft = std::make_unique<Box>("assets/box/box.obj", PROJECTION, VIEW, glm::translate(MODEL, glm::vec3{2.0f, 0.0f, 3.0f}));
+    this->_boxCenter = std::make_unique<Box>("assets/box/box.obj", PROJECTION, VIEW,glm::translate(MODEL, glm::vec3{0.0f, 0.0f, 3.0f}));
+    this->_boxRight = std::make_unique<Box>("assets/box/box.obj", PROJECTION, VIEW, glm::translate(MODEL, glm::vec3{-2.0f, 0.0f, 3.0f}));
 }
 
 void Game::_setupForklifts(const std::string& logFile)
 {
     std::ifstream file(logFile);
-    if (!file.is_open()) {
+    if (!file.is_open()) 
+    {
         std::cerr << "Failed to open file.\n";
         exit(1);
     }
-    std::regex pattern(R"(\[(\d),(\d)\])");
+    std::regex pattern(R"(([RBG]) robot \d in position \[(\d),(\d)\])");
     std::string line;
-    while (std::getline(file, line)) {
+    glm::vec3 color;
+    while (std::getline(file, line))
+    {
         std::smatch match;
-        if (std::regex_search(line, match, pattern)) {
-            int x = std::stoi(match[1]);
-            int y = std::stoi(match[2]);  
-            this->_forklifts.emplace_back(
-                "forklift/forklift.obj",
-                this->_board.projectionMatrix(),
-                this->_board.viewMatrix(),
-                glm::translate(this->_board.modelMatrix(), glm::vec3(4-x, 0.0f, y-4)),
-                x,
-                y
-            );
+        if (std::regex_search(line, match, pattern))
+        {
+            int x = std::stoi(match[2]);
+            int y = std::stoi(match[3]); 
+            if (match[1] == "R") color = glm::vec3{0.8f, 0.2f, 0.2f};
+            else if (match[1] == "G") color = glm::vec3{0.2f, 0.8f, 0.2f};
+            else if (match[1] == "B") color = glm::vec3{0.2f, 0.2f, 0.8f};
+            this->_forklifts.emplace_back("assets/forklift/forklift.obj", PROJECTION, VIEW, glm::translate(MODEL, glm::vec3(4-x, 0.0f, y-4)), x, y, color);
         }
     }
     file.close();
@@ -150,7 +95,6 @@ void Game::render(GLFWwindow* window)
     if (this->_boxRight)
         this->_boxRight->draw(this->_withtexture);
     glfwSwapBuffers(window);
-    glfwPollEvents();
 }
 
 
@@ -215,7 +159,6 @@ void Game::pickup(unsigned int forkliftIndex, GLFWwindow* window)
                     break;
             }
             forklift->setBox(std::move(this->_boxLeft));
-            // std::cout << "At t=" << this->_time << " robot " << forkliftIndex << "pickup in position ("<< forklift->x() << ',' << forklift->y() << ") with orientation " << forklift->orientation() << "\n";
         }
         else if (forklift->x() == 4)
         {
@@ -237,7 +180,6 @@ void Game::pickup(unsigned int forkliftIndex, GLFWwindow* window)
                     break;
             }
             forklift->setBox(std::move(this->_boxCenter));
-            // std::cout << "At t=" << this->_time << " robot " << forkliftIndex << "pickup in position ("<< forklift->x() << ',' << forklift->y() << ") with orientation " << forklift->orientation() << "\n";
         } 
         else if (forklift->x() == 6)
         {
@@ -259,43 +201,29 @@ void Game::pickup(unsigned int forkliftIndex, GLFWwindow* window)
                     break;
             }
             forklift->setBox(std::move(this->_boxRight));
-            // std::cout << "At t=" << this->_time << " robot " << forkliftIndex << "pickup in position ("<< forklift->x() << ',' << forklift->y() << ") with orientation " << forklift->orientation() << "\n";
         }
     }
 }
+
 void Game::generateBox(unsigned int forkliftIndex)
 {
     Forklift* forklift{&this->_forklifts[forkliftIndex]};
     if (forklift->y() == 7)
     {
         if (forklift->x() == 2)
-            this->_boxLeft = std::make_unique<Box>(
-                "box/box.obj", 
-                this->_board.projectionMatrix(),
-                this->_board.viewMatrix(),
-                glm::translate(this->_board.modelMatrix(), glm::vec3{2.0f, 0.0f, 3.0f})
-            );
-        if (forklift->x() == 4)
-            this->_boxCenter = std::make_unique<Box>(
-                "box/box.obj", 
-                this->_board.projectionMatrix(),
-                this->_board.viewMatrix(),
-                glm::translate(this->_board.modelMatrix(), glm::vec3{0.0f, 0.0f, 3.0f})
-            );
-        if (forklift->x() == 6)
-            this->_boxRight = std::make_unique<Box>(
-                "box/box.obj", 
-                this->_board.projectionMatrix(),
-                this->_board.viewMatrix(),
-                glm::translate(this->_board.modelMatrix(), glm::vec3{-2.0f, 0.0f, 3.0f})
-            );
+            this->_boxLeft = std::make_unique<Box>("assets/box/box.obj", PROJECTION, VIEW, glm::translate(MODEL, glm::vec3{2.0f, 0.0f, 3.0f}));
+        else if (forklift->x() == 4)
+            this->_boxCenter = std::make_unique<Box>("assets/box/box.obj", PROJECTION, VIEW,glm::translate(MODEL, glm::vec3{0.0f, 0.0f, 3.0f}));
+        else if (forklift->x() == 6)
+            this->_boxRight = std::make_unique<Box>("assets/box/box.obj", PROJECTION, VIEW, glm::translate(MODEL, glm::vec3{-2.0f, 0.0f, 3.0f}));
     }
 }
 
 void Game::dropoff(unsigned int forkliftIndex)
 {
     Forklift* forklift{&this->_forklifts[forkliftIndex]};
-    if (yellowCells.find({forklift->x(), forklift->y()}) != yellowCells.end()) {
+    if (yellowCells.find({forklift->x(), forklift->y()}) != yellowCells.end())
+    {
         forklift->setBox(nullptr);
     }
 }
@@ -328,8 +256,6 @@ void Game::up(unsigned int forkliftIndex, GLFWwindow* window)
     forklift->setY(forklift->y()-1);
     this->pickup(forkliftIndex, window);
     this->dropoff(forkliftIndex);
-    std::cout << "At t=" << this->_time << " robot " << forkliftIndex << "go up to position ("<< forklift->x() << ',' << forklift->y() << ") with orientation " << forklift->orientation() << "\n";
-    this->_time += 1;
 }
 
 void Game::down(unsigned int forkliftIndex, GLFWwindow* window)
@@ -360,8 +286,6 @@ void Game::down(unsigned int forkliftIndex, GLFWwindow* window)
     forklift->setY(forklift->y()+1);
     this->pickup(forkliftIndex, window);
     this->dropoff(forkliftIndex);
-    std::cout << "At t=" << this->_time << " robot" << forkliftIndex << "go down to position ("<< forklift->x() << ',' << forklift->y() << ") with orientation" << forklift->orientation() << "\n";
-    this->_time += 1;
 }
 
 void Game::left(unsigned int forkliftIndex, GLFWwindow* window)
@@ -392,14 +316,13 @@ void Game::left(unsigned int forkliftIndex, GLFWwindow* window)
     forklift->setX(forklift->x()-1);
     this->pickup(forkliftIndex, window);
     this->dropoff(forkliftIndex);
-    std::cout << "At t=" << this->_time << " robot" << forkliftIndex << "go left to position ("<< forklift->x() << ',' << forklift->y() << ") with orientation" << forklift->orientation() << "\n";
-    this->_time += 1;
 }
 
 void Game::right(unsigned int forkliftIndex, GLFWwindow* window)
 {
     Forklift* forklift{&this->_forklifts[forkliftIndex]};
-    switch (forklift->orientation()) {
+    switch (forklift->orientation())
+    {
         case Orientation::UP:
             this->turnRight(forkliftIndex, window);
             this->moveForward(forkliftIndex, window);
@@ -423,18 +346,15 @@ void Game::right(unsigned int forkliftIndex, GLFWwindow* window)
     forklift->setX(forklift->x()+1);
     this->pickup(forkliftIndex, window);
     this->dropoff(forkliftIndex);
-    std::cout << "At t=" << this->_time << " robot" << forkliftIndex << "go right to position ("<< forklift->x() << ',' << forklift->y() << ") with orientation" << forklift->orientation() << "\n";
-    this->_time += 1;
 }
 
 void Game::run(const std::string& logFile, GLFWwindow* window)
 {
     std::vector<std::pair<unsigned int, Orientation>> commands{prossessLogFile(logFile)};
-    int i{0};
     for (const auto& command: commands)
     {
-        std::cout << "At t=" << i << " " << command.first << " : "<< command.second << ".\n";
-        i += 1;
+        if (glfwWindowShouldClose(window))
+            return;
         switch (command.second) 
         {        
             case Orientation::UP:
@@ -450,31 +370,6 @@ void Game::run(const std::string& logFile, GLFWwindow* window)
                 this->right(command.first, window);
                 break;
         }
-        // if (command.second == "U") 
-        // {
-        //     // std::cout << "At t=" << this->_time << " robot " << command.first << "go "<< command.second <<" to position () with orientation " << "\n";
-        //     this->up(command.first, window);
-        //     // this->_time += 1;
-        // }
-        // else if (command.second == "D") 
-        // {
-        //     // std::cout << "At t=" << this->_time << " robot " << command.first << "go "<< command.second <<" to position () with orientation " << "\n";
-        //     this->down(command.first, window);
-        //     // this->_time += 1;
-        // }
-        // else if (command.second == "L") 
-        // {
-        //     // std::cout << "At t=" << this->_time << " robot " << command.first << "go "<< command.second <<" to position () with orientation " << "\n";
-        //     this->left(command.first, window);
-        //     // this->_time += 1;
-        // }
-        // else if (command.second == "R") 
-        // {
-        //     // std::cout << "At t=" << this->_time << " robot " << command.first << "go "<< command.second <<" to position () with orientation " << "\n";
-        //     this->right(command.first, window);
-        //     // this->_time += 1;
-        // }
     }
-
 }
 

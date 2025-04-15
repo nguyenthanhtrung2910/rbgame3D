@@ -4,7 +4,6 @@
 #include <cmath>
 #include <glad/glad.h> 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -368,11 +367,13 @@ Forklift::Forklift(
     const glm::mat4& viewMatrix,
     const glm::mat4& modelMatrix,
     unsigned int x,
-    unsigned int y
+    unsigned int y,
+    glm::vec3 color
 )
 : Model(materials, meshes, directory, projectionMatrix, viewMatrix, modelMatrix)
 , _x{x}
 , _y{y}
+, _color{color}
 {
 }
 
@@ -382,12 +383,15 @@ Forklift::Forklift(
     const glm::mat4& viewMatrix,
     const glm::mat4& modelMatrix,
     unsigned int x,
-    unsigned int y
+    unsigned int y,
+    glm::vec3 color
 )
 : Model(path, projectionMatrix, viewMatrix, modelMatrix)
 , _x{x}
 , _y{y}
+, _color{color}
 {
+    
 }
 
 Forklift::Forklift(const Forklift& forklift)
@@ -395,6 +399,7 @@ Forklift::Forklift(const Forklift& forklift)
 , _x{forklift._x}
 , _y{forklift._y}
 , _orient{forklift._orient}
+, _color{forklift._color}
 {
     if (forklift._box) {
         this->_box = std::make_unique<Box>(*forklift._box);
@@ -409,6 +414,7 @@ Forklift& Forklift::operator=(const Forklift& forklift)
         this->_x = forklift._x;
         this->_y = forklift._y;
         this->_orient = forklift._orient;
+        this->_color = forklift._color;
         if (forklift._box) {
             this->_box = std::make_unique<Box>(*forklift._box);
         } else {
@@ -441,6 +447,11 @@ unsigned int Forklift::y() const
 Orientation Forklift::orientation() const
 {
     return this->_orient;
+}
+
+const glm::vec3& Forklift::color() const
+{
+    return this->_color;
 }
 
 void Forklift::setOrientation(Orientation orient)
@@ -490,7 +501,10 @@ void Forklift::draw(const Shader& shader, const Shader& boxShader) const
     for(const Mesh& mesh: this->_meshes)
     {
         shader.setVec3("material.ambient", mesh.material()->Kd.x, mesh.material()->Kd.y, mesh.material()->Kd.z);
-        shader.setVec3("material.diffuse", mesh.material()->Kd.x, mesh.material()->Kd.y, mesh.material()->Kd.z);
+        if (mesh.material()->name == "geel1")
+            shader.setVec3("material.diffuse", this->_color.x, this->_color.y, this->_color.z);
+        else
+            shader.setVec3("material.diffuse", mesh.material()->Kd.x, mesh.material()->Kd.y, mesh.material()->Kd.z);
         shader.setVec3("material.specular", mesh.material()->Kd.x, mesh.material()->Kd.y, mesh.material()->Kd.z);
         shader.setFloat("material.shininess", mesh.material()->Ns);
         shader.setVec3("light.ambient", 1.0, 1.0, 1.0);
@@ -589,57 +603,3 @@ void Box::draw(const Shader& shader) const
         glActiveTexture(GL_TEXTURE0);
     }
 }
-
-// Cell::Cell(
-//     unsigned int x,
-//     unsigned int y,
-//     char color,
-//     unsigned int target
-// )
-// : _x{x}
-// , _y{y}
-// , _color{color}
-// , _target{target}
-// {
-// }
-
-// unsigned int Cell::x() const
-// {
-//     return this->_x;
-// }
-// unsigned int Cell::y() const
-// {
-//     return this->_y;
-// }
-// char Cell::color() const
-// {
-//     return this->_color;
-// }
-// unsigned int Cell::target() const
-// {
-//     return this->_target;
-// }
-// Cell* Cell::front() const
-// {
-//     return this->_front;
-// }
-// Cell* Cell::back() const
-// {
-//     return this->_back;
-// }
-// Cell* Cell::left() const
-// {
-//     return this->_left;
-// }
-// Cell* Cell::right() const
-// {
-//     return this->_right;
-// }
-// Forklift* Cell::forklift() const
-// {
-//     return this->_forklift;
-// }
-// void Cell::setForklift(Forklift* forklift)
-// {
-//     this->_forklift = forklift;
-// }
