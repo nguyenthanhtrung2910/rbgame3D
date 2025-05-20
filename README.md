@@ -22,3 +22,4 @@ Run by reading from .log file:
 ```bash
 ./rbgame events.log
 ```
+Press `Esc` to force quit.

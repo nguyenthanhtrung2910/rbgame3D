@@ -45,7 +45,32 @@ Game::Game(const std::string& logFile)
 : _board{"assets/board/board.obj", PROJECTION, VIEW, MODEL}
 , _notexture{setupShader("shaders/notexture.vs", "shaders/notexture.fs")}
 , _withtexture{setupShader("shaders/withtexture.vs", "shaders/withtexture.fs")}
+, _skybox{setupShader("shaders/skybox.vs", "shaders/skybox.fs")}
 {
+    for (int i = 0; i < 3*36; i++) {
+        _skyboxVertices[i] = skyboxVertices[i];
+    }
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(_skyboxVertices), &_skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    std::vector<std::string> faces
+    {
+        "assets/skybox/right.jpg",
+        "assets/skybox/left.jpg",
+        "assets/skybox/top.jpg",
+        "assets/skybox/bottom.jpg",
+        "assets/skybox/front.jpg",
+        "assets/skybox/back.jpg"
+    };
+    cubemapTexture = loadCubemap(faces);
+    _skybox.use();
+    _skybox.setInt("skybox", 0);
+    _skybox.setMat4("view", CUBEMAP_VIEW);
+    _skybox.setMat4("projection", PROJECTION);
     this->_setupForklifts(logFile);
     this->_boxLeft = std::make_unique<Box>("assets/box/box.obj", PROJECTION, VIEW, glm::translate(MODEL, glm::vec3{2.0f, 0.0f, 3.0f}));
     this->_boxCenter = std::make_unique<Box>("assets/box/box.obj", PROJECTION, VIEW,glm::translate(MODEL, glm::vec3{0.0f, 0.0f, 3.0f}));
@@ -94,6 +119,16 @@ void Game::render(GLFWwindow* window)
         this->_boxLeft->draw(this->_withtexture);
     if (this->_boxRight)
         this->_boxRight->draw(this->_withtexture);
+    // draw skybox as last
+    glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+    _skybox.use();
+    // skybox cube
+    glBindVertexArray(skyboxVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+    glDepthFunc(GL_LESS); // set depth function back to default
     glfwSwapBuffers(window);
 }
 

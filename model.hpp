@@ -20,6 +20,7 @@ enum class Orientation
 };
 
 std::ostream& operator<<(std::ostream& os, Orientation o);
+unsigned int loadCubemap(std::vector<std::string> faces);
 
 struct Vertex {
     // position

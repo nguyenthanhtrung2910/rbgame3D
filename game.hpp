@@ -16,6 +16,51 @@ inline constexpr unsigned int SCR_HEIGHT{600};
 inline const glm::mat4 PROJECTION{glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f)};
 inline const glm::mat4 VIEW{glm::lookAt(glm::vec3{0.0f, -3.0f, 4.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f,-1.0f, 0.0f})};
 inline const glm::mat4 MODEL{glm::scale(glm::mat4(1.0f), glm::vec3(0.45f, 0.45f, 0.45f))};
+inline const glm::mat4 CUBEMAP_VIEW{glm::mat4(glm::mat3(glm::lookAt(glm::vec3{0.0f, 0.0f, 3.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f,-1.0f, 0.0f})))};
+inline constexpr float skyboxVertices[]{
+    // positions          
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
 
 struct PairHash {
     template <typename T1, typename T2>
@@ -67,6 +112,10 @@ private:
     std::unique_ptr<Box> _boxLeft{nullptr};
     std::unique_ptr<Box> _boxCenter{nullptr};
     std::unique_ptr<Box> _boxRight{nullptr};
+    unsigned int skyboxVAO, skyboxVBO;
+    float _skyboxVertices[3*36];
+    Shader _skybox;
+    unsigned int cubemapTexture;
     void _setupForklifts(const std::string& logFile);
 };
 
